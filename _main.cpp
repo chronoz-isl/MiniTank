@@ -37,7 +37,7 @@ static WebSocket::pointer wsk = NULL;
 
 double vx = 0;
 double vz = 0;
-int direction = 0;
+int direction = 1;
 double  pointx[4] = { 227.321, -221.07 , -185.694 , 245.306 };
 double  pointy[4] = { -169.261 , -173.538 , 168.853, 164.846 };
 
@@ -59,9 +59,9 @@ gps_t our_gps;
 
 
 /* isExpectedStationary :- Used to indicate whether any moving orders have been issued.
- * If isExpectedStationary, then angles and position measurements that are more than threshold will be ignored. 
- * Initialized to false to compensate for initial GPS measurements.
- */
+* If isExpectedStationary, then angles and position measurements that are more than threshold will be ignored.
+* Initialized to false to compensate for initial GPS measurements.
+*/
 bool isExpectedStationary = false;
 const double ANGLE_STATIONARY_THRESHOLD = 7.0;
 const double POS_STATIONARY_THRESHOLD = 5.0;
@@ -124,7 +124,7 @@ void _movePrototype(RobotConnector &robot, double vx, double vz, double millis) 
 
 	int velL = (int)(vl*Create_MaxVel);
 	int velR = (int)(vr*Create_MaxVel);
-	
+
 	isExpectedStationary = false;
 	if (!robot.DriveDirect(velL, velR))
 		std::cout << "(_main.cpp:91) [ERROR] SetControl Fail\n";
@@ -214,73 +214,69 @@ void realignToZero(RobotConnector &robot) {
 }
 
 
-int checkmap(cv::Mat cSpace, int x, int y) {
+int checkmap(cv::Mat cSpace,cv::Mat visited ,int x, int y) {
+	int x_grid = x / 80;
+	int y_grid = y / 60;
 	int direc;
-	direc = 0;
-	/*
 	switch (direction)
 	{
 	case 0:
-	if (*cSpace.ptr<uchar>(y + 5, x) == 0 && y + 5 < 80) {
-	direc = 0;
-	}
-	else if (*cSpace.ptr<uchar>(y, x + 5) == 0 && x + 5 < 60) {
-	direc = 1;
-	}
-	else if (*cSpace.ptr<uchar>(y - 5, x) == 0 && y - 5 > 0) {
-	direc = 2;
-	}
-	else {
-	direc = 3;
-	}
+		if (*cSpace.ptr<uchar>(y_grid + 1, x_grid) == 0 && y_grid + 1 < 80 && *visited.ptr<uchar>(y_grid+ 1, x_grid) == 0) {
+			direc = 0;
+		}
+		else if (*cSpace.ptr<uchar>(y_grid, x_grid + 1) == 0 && x_grid + 1 < 60 && *visited.ptr<uchar>(y_grid , x_grid +1) == 0) {
+			direc = 1; 
+		}
+		else if (*cSpace.ptr<uchar>(y_grid - 1, x_grid) == 0 && y_grid - 1 > 0 && *visited.ptr<uchar>(y_grid - 1, x_grid) == 0) {
+			direc = 2;
+		}
+		else {
+			direc = 3;
+		}
+		break;
 	case 1:
-	for (int i = 0; i < 10; i++) {
-	if (*cSpace.ptr<uchar>(y, x + 5) == 1 && x + 5 < 60 )  {
-	direc = 0;
-	}
-	else if (*cSpace.ptr<uchar>(y - 5, x) == 1 && y - 5 > 0) {
-	direc = 1;
-	}
-	else if (*cSpace.ptr<uchar>(y, x - 5) == 1 && x - 5 > 0 ) {
-	direc = 2;
-	}
-	else {
-	direc = 3;
-	}
-	}
+		if (*cSpace.ptr<uchar>(y_grid, x_grid + 1) == 1 && x_grid + 1 < 60 && *visited.ptr<uchar>(y_grid, x_grid +1) == 0) {
+			direc = 0;
+		}
+		else if (*cSpace.ptr<uchar>(y_grid - 1, x_grid) == 1 && y_grid - 1 > 0 && *visited.ptr<uchar>(y_grid -1 , x_grid) == 0 ) {
+			direc = 1;
+		}
+		else if (*cSpace.ptr<uchar>(y_grid, x_grid - 1) == 1 && x_grid - 1 > 0 && *visited.ptr<uchar>(y_grid, x_grid -1) == 0) {
+			direc = 2;
+		}
+		else {
+			direc = 3;
+		}
+		break;
 	case 2:
-	for (int i = 0; i < 10; i++) {
-	if (*cSpace.ptr<uchar>(y - 5, x) == 1 && y - 5 > 0) {
-	direc = 0;
-	}
-	else if (*cSpace.ptr<uchar>(y, x - 5) == 1 && x - 5 > 0) {
-	direc = 1;
-	}
-	else if (*cSpace.ptr<uchar>(y + 5, x) == 1 && y + 5 < 80) {
-	direc = 2;
-	}
-	else {
-	direc = 3;
-	}
-	}
+		if (*cSpace.ptr<uchar>(y_grid - 1, x_grid) == 1 && y_grid - 1 > 0 && *visited.ptr<uchar>(y_grid - 1, x_grid) == 0) {
+			direc = 0;
+		}
+		else if (*cSpace.ptr<uchar>(y_grid, x_grid - 1) == 1 && x_grid - 1 > 0 && *visited.ptr<uchar>(y_grid, x_grid -1  == 0 )){
+			direc = 1;
+		}
+		else if (*cSpace.ptr<uchar>(y_grid + 1, x_grid) == 1 && y_grid + 1 < 80 &&  *visited.ptr<uchar>(y_grid + 1, x_grid) == 0) {
+			direc = 2;
+		}
+		else {
+			direc = 3;
+		}
+		break;
 	case 3:
-	for (int i = 0; i < 10; i++) {
-	if (*cSpace.ptr<uchar>(y, x - 5) == 1 && x - 5 > 0) {
-	direc = 0;
+		if (*cSpace.ptr<uchar>(y_grid, x_grid - 1) == 1 && x_grid - 1 > 0 && *visited.ptr<uchar>(y_grid, x_grid - 1) == 0) {
+			direc = 0;
+		}
+		else if (*cSpace.ptr<uchar>(y_grid + 1, x_grid) == 1 && y_grid + 1 < 80 && *visited.ptr<uchar>(y_grid + 1, x_grid) == 0) {
+			direc = 1;
+		}
+		else if (*cSpace.ptr<uchar>(y_grid, x_grid + 1) == 1 && x_grid + 1 < 60 && *visited.ptr<uchar>(y_grid, x_grid + 1 ) == 0) {
+			direc = 2;
+		}
+		else {
+			direc = 3;
+		}
+		break;
 	}
-	else if (*cSpace.ptr<uchar>(y + 5, x) == 1 && y + 5 < 80) {
-	direc = 1;
-	}
-	else if (*cSpace.ptr<uchar>(y, x + 5) == 1 && x + 5 < 60) {
-	direc = 2;
-	}
-	else {
-	direc = 3;
-	}
-	}
-
-	}
-	*/
 	// direc = 0  Turnright
 	// direc = 1  Forward
 	// direc = 2  Turnleft
@@ -434,7 +430,7 @@ void handle_message(const std::string & message)
 			// If is expected to be stationary, ignore noisy values.
 			isExpectedStationary = false;		// Ignore this for now... 
 			if (isExpectedStationary) {
-				if (abs(our_gps.angle - g.angle) < ANGLE_STATIONARY_THRESHOLD || 360 -  abs(our_gps.angle - g.angle) < ANGLE_STATIONARY_THRESHOLD) {
+				if (abs(our_gps.angle - g.angle) < ANGLE_STATIONARY_THRESHOLD || 360 - abs(our_gps.angle - g.angle) < ANGLE_STATIONARY_THRESHOLD) {
 					our_gps.angle = g.angle;
 				}
 				if (abs(our_gps.x - g.x) < POS_STATIONARY_THRESHOLD) {
@@ -703,6 +699,7 @@ int main() {
 		std::cout << "(_main.cpp:622) [INFO ] Connected to robot @" << Create_Comport << "\n";
 	}
 	robot.DriveDirect(0, 0);
+	robot.LEDs(false, false, 0, 255);
 
 
 	// Kinect Initialization
@@ -761,7 +758,7 @@ int main() {
 	cv::Mat nextProbs;					// Next Probability Matrix for Bayes Filter Calculation. (values in [0.0, 1.0]).
 	cv::Mat visitedGrid;				// Rough Grid Object indicating which cells have the robot travelled.
 
-	// Grid Objects Initialization.
+										// Grid Objects Initialization.
 	grid = cv::Mat(GRID_HEIGHT, GRID_WIDTH, CV_32FC1, cv::Scalar(127));
 	gridView = cv::Mat(GRID_HEIGHT, GRID_WIDTH, CV_8UC3);
 	gridInt = cv::Mat(GRID_HEIGHT, GRID_WIDTH, CV_8UC1, cv::Scalar(127));
@@ -789,9 +786,9 @@ int main() {
 	// Debugging Variables
 	int loop_index = 0;				// Count how many loops have passed, use for debugging.
 
-	// Enable Measuring
+									// Enable Measuring
 	enableMeasuring = true;
-	
+
 	int objectDistMin = 1000000;
 	const int scanCountRst = 8;
 	int scanCount = 0;
@@ -848,110 +845,83 @@ int main() {
 
 		printf("(_main.cpp:523) <%d> Read GPS: ang = %lf, x = %lf, y = %lf\n", loop_index, our_gps.angle, our_gps.x, our_gps.y);
 
-		/*if (!findObstrucle) {
-		cout << "CP";
-		cv::Mat depthImg;
-		cv::Mat colorImg;
-		cv::Mat indexImg;
-		cv::Mat pointImg;
-		// Get Data from Kinect to find obstrucle
-		kin.GrabData(depthImg, colorImg, indexImg, pointImg);
-
-		if (our_gps.x - 1 > 0 || our_gps.x + 1 < cSpace.cols || our_gps.y - 1 > 0 || our_gps.y + 1 < cSpace.cols) {
-		if (depthImg.ptr<int>()) {
-		moveForward(robot, 10);
-		continue;
-		}
-		else {
-		findObstrucle = 1;
-		}
-
-		}
-		else {
-		findObstrucle = 1;
-		}
-		}*/
+		
 		// Switch robot State //
 
 
-		/*switch (robotState) {
-		case ROBOT_STATE_MOVE:
-		enableMeasuring = false;
-		if (objectDistMin <= 700) {
-		turnLeft(robot, 120);
-		robotState = ROBOT_STATE_SCAN;
-		}
-		break;
-		case ROBOT_STATE_TURN:
-		enableMeasuring = true;
-		if (scanCount >= scanCountRst) {
-		scanCount = 0;
-		robotState = ROBOT_STATE_MOVE;
-		}
-		else {
-		if (loop_index % 10 == 0) {
-		scanCount++;
-		}
-		robotState = ROBOT_STATE_TURN;
-		}
-		break;
-		case ROBOT_STATE_SCAN :
-		enableMeasuring = false;
-		}*/
-		/*
+		
+		
 		int direc;
 		double diffang;
 		cout << "RobotState : " << robotState << endl;
 		switch (robotState) {
-		case ROBOT_STATE_MOVE:
-			cout << "State move1" << endl;
-			if (movingCounter == 0) {
-				moveForward(robot, 400);
-			}
-			else {
-				moveForward(robot, 300);
-			}
-
-			movingCounter = !movingCounter;
-			robotState = ROBOT_STATE_SCAN;
-			break;
-		case ROBOT_STATE_TURN:
-			cout << "State turn" << endl;
-			/*diffang =  calculateangle(x_avg, y_avg,ang_avg) - ang_avg ;
-			cout << "Diffang : " << diffang  << endl;
-			if (diffang < -180) {
-			diffang = diffang + 360;
-			}
-			else if (diffang > 180) {
-			diffang = diffang - 360;
-			}
-			if (diffang < 0) {
-			turnRight(robot, -diffang);
-			cout << "Turn Right ";
-			}
-			else {
-			turnLeft(robot, diffang);
-			cout << "Turn Left ";
-			}
-			cout << "Diffang : " << diffang << endl;
-
-			//////////////////////////////
-
-			turnLeft(robot, 90);
-			cout << "Ang_avg " << ang_avg << endl;
-			robotState = ROBOT_STATE_MOVE;
-			break;
-		case ROBOT_STATE_SCAN:
-			cout << "scancount : " << scanCount << endl;
-			if (scansucceed) {
-				turnLeft(robot, 45);
-				scansucceed = 0;
+			case ROBOT_STATE_MOVE:
+				moveForward(robot, 18);
+				robotState = ROBOT_STATE_SCAN;
+				break;
+			case ROBOT_STATE_TURN:
+				cout << "State turn" << endl;
+				direc = checkmap(cSpace, visitedGrid, x_avg, y_avg);
+				if (direc == 0) {
+					turnRight(robot, 90);
+					if (direction == 0) {
+						direction = 3;
+					}
+					else if (direction == 1) {
+						direction = 0;
+					}
+					else if (direction == 2) {
+						direction = 1;
+					}
+					else if (direction == 3) {
+						direction = 2;
+					}
+				}
+				else  if (direc == 1) {
+				}
+				else if (direc == 2) {
+					turnLeft(robot, 90);
+					if (direction == 0) {
+						direction = 1;
+					}
+					else if (direction == 1) {
+						direction = 2;
+					}
+					else if (direction == 2) {
+						direction = 3;
+					}
+					else if (direction == 3) {
+						direction = 0;
+					}
+				}
+				else if (direc == 3) {
+					turnLeft(robot, 180);
+					if (direction == 0) {
+						direction = 2;
+					}
+					else if (direction == 1) {
+						direction = 3;
+					}
+					else if (direction == 2) {
+						direction = 0;
+					}
+					else if (direction == 3) {
+						direction = 1;
+					}
+				}
+				robotState = ROBOT_STATE_MOVE;
+				break;
+			case ROBOT_STATE_SCAN:
+				cout << "scancount : " << scanCount << endl;
+				if (scansucceed) {
+					turnLeft(robot, 45);
+					scansucceed = 0;
+				}
 				if (scanCount == 8) {
 					scanCount = 0;
 					robotState = ROBOT_STATE_TURN;
 				}
 				break;
-			}
 		}
 
 		if (robotState != ROBOT_STATE_SCAN) {
@@ -961,7 +931,7 @@ int main() {
 		if (numturn == 5) {
 			break;
 		}
-		*/
+		
 		printf("_main.cpp:830 finished state case\n");
 
 		// *_in_buff is used as median of 4 values
@@ -1075,7 +1045,7 @@ int main() {
 		//imshow("pointImg", pointImg);
 		//std::vector<cv::Point> updatePoints;
 		//std::vector<double> updateProbs;
-		
+
 		std::vector<cv::Point> objectPoints; // List of Points which are determined in this round of scanning to be an object.
 		objectDistMin = 1000000;
 		for (int theta = -30; theta <= 30; theta++) {
@@ -1284,7 +1254,7 @@ int main() {
 		*visitedGrid.ptr<uchar>(robotPoint.y / ROUGH_FACTOR, robotPoint.x / ROUGH_FACTOR) = 1;
 
 		// Prepare C-Space for Display
-		
+
 		for (int i = 0; i < ROUGH_GRID_HEIGHT; i++) {
 			for (int j = 0; j < ROUGH_GRID_WIDTH; j++) {
 				*cSpace.ptr<uchar>(i, j) *= 127;
@@ -1293,7 +1263,7 @@ int main() {
 
 		cvtColor(cSpace, cSpaceView, CV_GRAY2RGB);
 
-		
+
 		// Set Path Blue in C-Space View
 		uchar* pathPixel;
 		for (int i = 0; i < ROUGH_GRID_HEIGHT; i++) {
@@ -1314,7 +1284,7 @@ int main() {
 		*cPlayerPixel = 255;
 
 		imshow("C-SPACE VIEW", cSpaceView);
-		
+
 
 		// DISPLAY //
 
@@ -1449,11 +1419,11 @@ int main() {
 
 
 		printf("(_main.cpp:1370) <%d> Show GRID_VIEW Image.\n", loop_index);
-		
-		
+
+
 		int userInput = cv::waitKey(100);
-		
-		
+
+
 		// User-controlled Movement Logic
 		if (userInput == ' ') {
 			enableMeasuring = !enableMeasuring;
@@ -1473,7 +1443,7 @@ int main() {
 		else if (userInput == 'r') {
 			realignToZero(robot);
 		}
-		
+
 		printf("(_main.cpp:1391) <%d> Waited for user input (cvWaitKey), received char %d.\n", loop_index, userInput);
 		loop_index++;
 
